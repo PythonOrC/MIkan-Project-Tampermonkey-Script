@@ -1,0 +1,36 @@
+mikan
+|-detail page
+    |- baugumi.tv
+        |- mal search
+
+
+
+mikan
+|- anibk search
+    |- detail page
+        |- mal website
+
+mikan
+|- ideapart
+    |- mal search
+
+
+
+
+mikan
+|-detail page
+    |- baugumi.tv
+|- tmdb search
+    |- mal search
+
+
+
+===========
+
+mikan
+|-detail page
+    |- baugumi.tv
+        |- mal search
+mikan
+|- ideapart
+    |- mal search
