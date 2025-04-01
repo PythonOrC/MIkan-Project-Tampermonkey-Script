@@ -25,7 +25,7 @@
 
   GM_addStyle(`
     /* The switch - the box around the slider */
-    
+
     .custom-view-side-info {
       display: flex;
       flex-direction: column;
@@ -33,19 +33,19 @@
       width: 150px;
       height: 100%;
     }
-    
+
     .custom-view-side-info .spacer {
       height: 5px; /* Adjust the height to control the spacing */
     }
-    
+
     .custom-view-icon {
-      vertical-align: middle; 
-      width: 16px; 
-      height: 16px; 
+      vertical-align: middle;
+      width: 16px;
+      height: 16px;
       margin-right: 8px;}
-      
+
       .custom-view-li {
-        height: 275px !important; 
+        height: 275px !important;
       }
     .custom-view-an-info {
       height: 50px !important;
@@ -154,8 +154,9 @@
   function homePageFunction() {
     const apis = {
       myanimelist: {
-        client_id: "CLIENT_ID",
-        client_secret: "CLIENT_SECRET",
+        client_id: "e7aba2240450e0eb05ec314d7ceffd7b",
+        client_secret:
+          "e86370b58662f39e0734cec45b965ecd45b22323bb5682fb50e50a3264ed6975",
         method: "GET",
         url: "https://api.myanimelist.net/v2/anime",
         search_param: "q",
@@ -169,17 +170,32 @@
         id_value: "client_id",
       },
       bangumitv: {
-        client_id: "CLIENT_ID",
-        client_secret: "CLIENT_SECRET",
+        client_id: "bgm371867e5cf2b80909",
+        client_secret: "3439b9fb4e96841760a1a5912f4da9ab",
         method: "GET",
         url: "https://api.bgm.tv/search/subject/",
         search_param: "",
-        fixed_params: { type: "2", responseGroup: "large", max_results: "1" },
+        fixed_params: {
+          type: "2",
+          responseGroup: "large",
+          max_results: "1",
+        },
         fixed_headers: { accept: "application/json" },
         id_key: "",
         id_value: "",
       },
     };
+    // // attach evenlistener to sk-data-nav
+    // const nav_bar = document.getElementById("sk-data-nav");
+    // nav_bar.classList.add("rerun-home-nav-bar");
+    // nav_bar.querySelectorAll(".dropdown-submenu").forEach((dropdown) => {
+    //   dropdown.classList.add("rerun-home-submenu");
+    //   dropdown.querySelectorAll("li").forEach((li) => {
+    //     li.addEventListener("click", homePageFunction);
+    //     li.classList.add("rerun-home-li");
+    //   });
+    // });
+
     const anime_entries = hp_getAnimeTitles();
 
     const anime_div = document.createElement("div");
@@ -227,6 +243,34 @@
           hp_updateAnimeDiv(anime_entries);
         });
       });
+
+    const targetElement = document.querySelector("div.sk-col.date-text");
+    if (targetElement) {
+      let debounceTimeout;
+      const observer = new MutationObserver(() => {
+        // Clear any previous timeout
+        if (debounceTimeout) clearTimeout(debounceTimeout);
+        // Set a new timer for 2 seconds.
+        debounceTimeout = setTimeout(() => {
+          console.log(
+            "No further changes for 1s. Final text:",
+            targetElement.textContent
+          );
+          homePageFunction();
+        }, 1000);
+      });
+      // Observe only changes to child list and character data of the target element
+      // with subtree: false so that only direct text content changes trigger the callback.
+      observer.observe(targetElement, {
+        childList: true,
+        characterData: true,
+        subtree: false,
+      });
+    } else {
+      console.error(
+        "Target element for text observer not found on home page. Adjust your selector."
+      );
+    }
   }
 
   function hp_sortTable(anime_entries, criteria, reverse) {
@@ -357,12 +401,12 @@
         side_info_div.innerHTML = `
           <div>
             <img src="https://bgm.tv/img/favicon.ico" alt="BGM" class="custom-view-icon">
-            <span class="bgm-score"></span>
+            <a class="bgm-score"></a>
           </div>
           <div class="spacer"></div>
           <div>
             <img src="https://cdn.myanimelist.net/images/favicon.ico" alt="MAL" class="custom-view-icon">
-            <span class="mal-score"></span>
+            <a class="mal-score"></a>
           </div>
           `;
         //TODO: maybe consider adding popularity? <div>Popularity: <span class="mal-popularity">107k</span></div>
@@ -408,13 +452,15 @@
     // Loop over entries one by one
     for (const entry of entries) {
       console.log(entry.title);
-      if (false) {
+      if (true) {
         try {
           const bgmtv = await hp_callAPI(apis.bangumitv, entry.title);
+          entry.bgmtv_link = bgmtv.list[0].link; //! add link
           entry.bgmtv_score = bgmtv.list[0].rating.score;
           entry.title_jp = bgmtv.list[0].name;
           try {
             const mal = await hp_callAPI(apis.myanimelist, entry.title_jp);
+            entry.mal_link = mal.data[0].node.url; //! add link
             entry.mal_score = mal.data[0].node.mean;
             entry.mal_popularity = mal.data[0].node.popularity;
           } catch (e) {
@@ -428,6 +474,8 @@
         if (entry.title_jp === undefined) entry.title_jp = "";
         if (entry.mal_score === undefined) entry.mal_score = 0.0;
         if (entry.mal_popularity === undefined) entry.mal_popularity = 0;
+        if (entry.bgmtv_link === undefined) entry.bgmtv_link = "/";
+        if (entry.mal_link === undefined) entry.mal_link = "/";
       } else {
         //* populate anime_entires with fake data for testing purposes
         entry.title_jp = "日本語タイトル";
@@ -436,7 +484,10 @@
         entry.mal_score = Math.floor(Math.random() * 1000) / 100;
 
         entry.mal_popularity = Math.floor(Math.random() * 1000);
-        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        entry.bgmtv_link = "https://bgm.tv/subject/1";
+        entry.mal_link = "https://myanimelist.net/anime/1";
+        //await new Promise((resolve) => setTimeout(resolve, 200));
       }
       console.log(entry);
       // Update the DOM right after processing this entry
@@ -454,10 +505,11 @@
     curr_entry_html.querySelector("div.custom-view-title-jp").textContent =
       entry.title_jp;
 
-    curr_entry_html.querySelector("span.bgm-score").textContent =
+    curr_entry_html.querySelector("a.bgm-score").textContent =
       entry.bgmtv_score;
-    curr_entry_html.querySelector("span.mal-score").textContent =
-      entry.mal_score;
+    curr_entry_html.querySelector("a.bgm-score").href = entry.bgmtv_link;
+    curr_entry_html.querySelector("a.mal-score").textContent = entry.mal_score;
+    curr_entry_html.querySelector("a.mal-score").href = entry.mal_link;
     // Update the entry HTML with the modified content
     entry.html = curr_entry_html.innerHTML;
   }
@@ -510,6 +562,169 @@
   // function for the detail page
   function detailPageFunction() {
     console.log("Detail Page");
-    alert("Detail Page");
+    dp_magnetLinkSelector();
+  }
+
+  function dp_magnetLinkSelector() {
+    const clipboard = [];
+
+    function Checkbox(magnetLink) {
+      const wrapper = document.createElement("span");
+      const input = document.createElement("input");
+      input.setAttribute("type", "checkbox");
+      input.setAttribute("data-magnet-link", magnetLink);
+      input.checked = clipboard.includes(input.dataset["magnetLink"]);
+      input.addEventListener("change", (e) => {
+        const magnetlink = e.target.dataset["magnetLink"];
+        if (e.target.checked) {
+          clipboard.push(magnetlink);
+        } else {
+          clipboard.splice(
+            clipboard.findIndex((value) => value === magnetlink),
+            1
+          );
+        }
+        console.log(clipboard);
+      });
+      wrapper.append(input);
+      return wrapper;
+    }
+
+    function CopyLink() {
+      const link = document.createElement("a");
+      link.setAttribute("class", "subgroup-subscribe");
+      link.append(document.createTextNode("[批量复制磁链]"));
+      link.addEventListener("click", () => {
+        navigator.clipboard.writeText(clipboard.join("\n"));
+      });
+      return link;
+    }
+
+    function SelectAll() {
+      const select = document.createElement("a");
+      select.setAttribute("class", "subgroup-subscribe");
+      select.append(document.createTextNode("[全选]"));
+      select.setAttribute("style", "float: right;");
+      select.addEventListener("click", () => {
+        let parent = select;
+        while (parent.nodeName.toLowerCase() !== "table") {
+          parent = parent.parentNode;
+        }
+        const checkboxes = parent.querySelectorAll("input[type=checkbox]");
+        checkboxes.forEach((checkbox) => {
+          checkbox.checked = true;
+          const magnetlink = checkbox.dataset["magnetLink"];
+          if (!clipboard.includes(magnetlink)) {
+            clipboard.push(magnetlink);
+          }
+        });
+      });
+      return select;
+    }
+
+    function UnselectAll() {
+      const select = document.createElement("a");
+      select.setAttribute("class", "subgroup-subscribe");
+      select.append(document.createTextNode("[取消全选]"));
+      select.setAttribute("style", "float: right;");
+      select.addEventListener("click", () => {
+        let parent = select;
+        while (parent.nodeName.toLowerCase() !== "table") {
+          parent = parent.parentNode;
+        }
+        const checkboxes = parent.querySelectorAll("input[type=checkbox]");
+        checkboxes.forEach((checkbox) => {
+          checkbox.checked = false;
+          const magnetlink = checkbox.dataset["magnetLink"];
+          if (clipboard.includes(magnetlink)) {
+            clipboard.splice(
+              clipboard.findIndex((value) => value === magnetlink),
+              1
+            );
+          }
+        });
+      });
+      return select;
+    }
+
+    function ReverseSelect() {
+      const select = document.createElement("a");
+      select.setAttribute("class", "subgroup-subscribe");
+      select.append(document.createTextNode("[反选]"));
+      select.setAttribute("style", "float: right;");
+      select.addEventListener("click", () => {
+        let parent = select;
+        while (parent.nodeName.toLowerCase() !== "table") {
+          parent = parent.parentNode;
+        }
+        const checkboxes = parent.querySelectorAll("input[type=checkbox]");
+        checkboxes.forEach((checkbox) => {
+          checkbox.checked = !checkbox.checked;
+          const magnetlink = checkbox.dataset["magnetLink"];
+          if (clipboard.includes(magnetlink)) {
+            clipboard.splice(
+              clipboard.findIndex((value) => value === magnetlink),
+              1
+            );
+          } else {
+            clipboard.push(magnetlink);
+          }
+        });
+      });
+      return select;
+    }
+
+    const Select = { SelectAll, UnselectAll, ReverseSelect };
+
+    // Override XMLHttpRequest open to hook into loadend events
+    const origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function () {
+      this.addEventListener("loadend", function () {
+        addCheckbox();
+        addCopyLink();
+        addSelect();
+      });
+      origOpen.apply(this, arguments);
+    };
+
+    function addCheckbox() {
+      const heads = document.querySelectorAll(".magnet-link-wrap");
+      heads.forEach((head) => {
+        // Only add if not already added (you can adjust this check as needed)
+        if (!head.previousSibling) {
+          head.insertAdjacentElement(
+            "beforebegin",
+            Checkbox(head.nextElementSibling.dataset["clipboardText"])
+          );
+        }
+      });
+    }
+
+    function addCopyLink() {
+      document.querySelectorAll('th[width="65%"]').forEach((head) => {
+        if (!head.childElementCount) {
+          head.insertAdjacentText("beforeend", " ");
+          head.insertAdjacentElement("beforeend", CopyLink());
+        }
+      });
+    }
+
+    function addSelect() {
+      document.querySelectorAll('th[width="65%"]').forEach((head) => {
+        if (head.childElementCount === 1) {
+          head.insertAdjacentText("beforeend", " ");
+          head.insertAdjacentElement("beforeend", Select.SelectAll());
+          head.insertAdjacentText("beforeend", " ");
+          head.insertAdjacentElement("beforeend", Select.UnselectAll());
+          head.insertAdjacentText("beforeend", " ");
+          head.insertAdjacentElement("beforeend", Select.ReverseSelect());
+        }
+      });
+    }
+
+    // Initialize the magnetic link selector on page load
+    addCheckbox();
+    addCopyLink();
+    addSelect();
   }
 })();
